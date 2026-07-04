@@ -1,0 +1,15 @@
+{
+  "name": "cajero-atm",
+  "version": "1.0.0",
+  "description": "Ejercicio de tipado, tipos primitivos/compuestos y memoria usando un cajero automatico",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "ts-node": "^10.9.2"
+  }
+}
