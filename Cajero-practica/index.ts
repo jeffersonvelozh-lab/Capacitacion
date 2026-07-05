@@ -1,21 +1,35 @@
 const readline = require("readline");
 
-// ==========================================
-// VALUE OBJECT: Dinero
-// ==========================================
-// Un Value Object se identifica por su VALOR, no por una identidad única.
-// Dos "Dinero" con el mismo monto son intercambiables. Además, es INMUTABLE:
-// Object.freeze() impide que alguien modifique sus propiedades después de
-// creado. Cualquier "cambio" crea un objeto Dinero nuevo.
+//Datos conpuestos
+type TipoTransaccion = "deposito" | "retiro";
+
+type ResultadoOperacion =
+    | { tipo: "exito"; mensaje: string; saldoActual: Dinero }
+    | { tipo: "error"; mensaje: string };
+
+// Genérico: Registro<T> puede envolver cualquier tipo de evento
+interface Registro<T> {
+    fecha: Date;
+    detalle: T;
+}
+
+interface DetalleTransaccion {
+    tipo: TipoTransaccion;
+    monto: Dinero;
+    saldoResultante: Dinero;
+}
+
 interface Dinero {
     readonly monto: number;
 }
 
+
+//Funciones principales
 function crearDinero(monto: number): Dinero {
     if (monto < 0) {
         throw new Error("El monto de dinero no puede ser negativo.");
     }
-    // Redondeamos a 2 decimales para evitar errores de precisión con floats
+    // aqui se redondea el monto a dos decimales
     const montoRedondeado = Math.round(monto * 100) / 100;
     return Object.freeze({ monto: montoRedondeado });
 }
@@ -28,100 +42,69 @@ function restarDinero(a: Dinero, b: Dinero): Dinero {
     return crearDinero(a.monto - b.monto);
 }
 
-// ==========================================
-// TIPOS COMPUESTOS Y DISCRIMINATED UNIONS
-// ==========================================
-type TipoTransaccion = "deposito" | "retiro";
 
-// Genérico: Registro<T> puede envolver cualquier tipo de evento, no solo
-// transacciones del cajero. Aquí lo usamos con T = DetalleTransaccion.
-interface Registro<T> {
-    fecha: Date;
-    detalle: T;
-}
+//Programacióm Orientada a Objetos
+//Tratando cuenta como una clase
+class Cuenta {
+    readonly titular: string;
+    private saldo: Dinero;
+    private historial: Registro<DetalleTransaccion>[] = [];
 
-interface DetalleTransaccion {
-    tipo: TipoTransaccion;
-    monto: Dinero;
-    saldoResultante: Dinero;
-}
+    constructor(titular: string, saldoInicial: Dinero) {
+        this.titular = titular;
+        this.saldo = saldoInicial;
+    }
 
-// Discriminated union: el campo "tipo" es el "discriminante". TypeScript usa
-// ese campo para saber qué otras propiedades existen en cada caso.
-type ResultadoOperacion =
-    | { tipo: "exito"; mensaje: string; saldoActual: Dinero }
-    | { tipo: "error"; mensaje: string };
-
-// ==========================================
-// CUENTA BANCARIA CON CLOSURE (encapsulación real)
-// ==========================================
-// Igual que "crearCalculadoraFactorial" escondía el cache, aquí "saldo" y
-// "historial" viven dentro del closure de crearCuenta(). Nadie fuera de esta
-// función puede leerlos o mutarlos directamente: solo a través de los
-// métodos que devolvemos (depositar, retirar, consultarSaldo, verHistorial).
-function crearCuenta(titular: string, saldoInicial: Dinero) {
-    let saldo: Dinero = saldoInicial;
-    const historial: Registro<DetalleTransaccion>[] = [];
-
-    function registrarMovimiento(tipo: TipoTransaccion, monto: Dinero): void {
-        historial.push({
+    private registrarMovimiento(tipo: TipoTransaccion, monto: Dinero): void {
+        this.historial.push({
             fecha: new Date(),
-            detalle: { tipo, monto, saldoResultante: saldo },
+            detalle: { tipo, monto, saldoResultante: this.saldo },
         });
     }
 
-    function depositar(monto: Dinero): ResultadoOperacion {
+    depositar(monto: Dinero): ResultadoOperacion {
         if (monto.monto <= 0) {
             return { tipo: "error", mensaje: "El monto a depositar debe ser mayor a 0." };
         }
 
-        saldo = sumarDinero(saldo, monto);
-        registrarMovimiento("deposito", monto);
+        this.saldo = sumarDinero(this.saldo, monto);
+        this.registrarMovimiento("deposito", monto);
 
         return {
             tipo: "exito",
             mensaje: `Depósito de $${monto.monto} realizado.`,
-            saldoActual: saldo,
+            saldoActual: this.saldo,
         };
     }
 
-    function retirar(monto: Dinero): ResultadoOperacion {
+    retirar(monto: Dinero): ResultadoOperacion {
         if (monto.monto <= 0) {
             return { tipo: "error", mensaje: "El monto a retirar debe ser mayor a 0." };
         }
-        if (monto.monto > saldo.monto) {
+        if (monto.monto > this.saldo.monto) {
             return { tipo: "error", mensaje: "Fondos insuficientes." };
         }
 
-        saldo = restarDinero(saldo, monto);
-        registrarMovimiento("retiro", monto);
+        this.saldo = restarDinero(this.saldo, monto);
+        this.registrarMovimiento("retiro", monto);
 
         return {
             tipo: "exito",
             mensaje: `Retiro de $${monto.monto} realizado.`,
-            saldoActual: saldo,
+            saldoActual: this.saldo,
         };
     }
 
-    function consultarSaldo(): Dinero {
-        return saldo;
+    consultarSaldo(): Dinero {
+        return this.saldo;
     }
 
-    function verHistorial(): Registro<DetalleTransaccion>[] {
-        // Devolvemos una copia (spread) para que nadie mute el historial real
-        // desde afuera -- mismo principio que usamos en ordenPorPromedioDescendente
-        return [...historial];
+    verHistorial(): Registro<DetalleTransaccion>[] {
+        return [...this.historial];
     }
-
-    return { titular, depositar, retirar, consultarSaldo, verHistorial };
 }
 
-// El tipo de lo que devuelve crearCuenta, para poder tipar la variable
-type Cuenta = ReturnType<typeof crearCuenta>;
 
-// ==========================================
-// LECTURA DE CONSOLA
-// ==========================================
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
 function pedirRespuesta(pregunta: string): Promise<string> {
@@ -130,9 +113,7 @@ function pedirRespuesta(pregunta: string): Promise<string> {
     });
 }
 
-// ==========================================
-// FUNCIONES DEL MENÚ
-// ==========================================
+// Menú
 function mostrarMenu(): void {
     console.log(`
 ===== CAJERO AUTOMÁTICO =====
@@ -144,13 +125,13 @@ function mostrarMenu(): void {
 `);
 }
 
-// Manejo del discriminated union: TypeScript exige revisar "tipo" antes de
-// acceder a "saldoActual", porque solo existe en el caso "exito".
+// se exige revisar "tipo" antes de acceder a "saldoActual", 
+// porque solo existe en el caso "exito".
 function mostrarResultado(resultado: ResultadoOperacion): void {
     if (resultado.tipo === "exito") {
-        console.log(`✅ ${resultado.mensaje} Saldo actual: $${resultado.saldoActual.monto}`);
+        console.log(`${resultado.mensaje} Saldo actual: $${resultado.saldoActual.monto}`);
     } else {
-        console.log(`❌ ${resultado.mensaje}`);
+        console.log(`${resultado.mensaje}`);
     }
 }
 
@@ -159,7 +140,7 @@ async function depositarMenu(cuenta: Cuenta): Promise<void> {
     const montoNumero = Number(montoTexto);
 
     if (isNaN(montoNumero)) {
-        console.log("❌ Monto inválido.");
+        console.log("Monto inválido.");
         return;
     }
 
@@ -172,7 +153,7 @@ async function retirarMenu(cuenta: Cuenta): Promise<void> {
     const montoNumero = Number(montoTexto);
 
     if (isNaN(montoNumero)) {
-        console.log("❌ Monto inválido.");
+        console.log(" Monto inválido.");
         return;
     }
 
@@ -198,12 +179,10 @@ function verHistorialMenu(cuenta: Cuenta): void {
     });
 }
 
-// ==========================================
-// BUCLE PRINCIPAL
-// ==========================================
+// Funcion principal MAIN 
 async function main(): Promise<void> {
     const nombreTitular = await pedirRespuesta("Ingresa tu nombre: ");
-    const cuenta = crearCuenta(nombreTitular.trim(), crearDinero(100)); // saldo inicial de ejemplo
+    const cuenta = new Cuenta(nombreTitular.trim(), crearDinero(100)); // saldo inicial de ejemplo
 
     let salir = false;
 
@@ -225,7 +204,7 @@ async function main(): Promise<void> {
                 verHistorialMenu(cuenta);
                 break;
             case "5":
-                console.log(`Gracias por usar el cajero, ${cuenta.titular}. ¡Hasta luego!`);
+                console.log(`Gracias por usar el cajero, ${cuenta.titular}.`);
                 salir = true;
                 break;
             default:
