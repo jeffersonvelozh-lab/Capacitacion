@@ -46,12 +46,10 @@ function restarDinero(a: Dinero, b: Dinero): Dinero {
 //Programacióm Orientada a Objetos
 //Tratando cuenta como una clase
 class Cuenta {
-    readonly titular: string;
     private saldo: Dinero;
     private historial: Registro<DetalleTransaccion>[] = [];
 
-    constructor(titular: string, saldoInicial: Dinero) {
-        this.titular = titular;
+    constructor(public readonly titular: string, saldoInicial: Dinero) {
         this.saldo = saldoInicial;
     }
 
