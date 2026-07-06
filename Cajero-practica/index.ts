@@ -23,9 +23,19 @@ interface Dinero {
     readonly monto: number;
 }
 
+function memoizar<T, R>(fn: (arg: T) => R): (arg: T) => R {
+    const cache = new Map<T, R>();
+    return (arg: T): R => {
+        if (cache.has(arg)) {
+            return cache.get(arg)!;
+        }
+        const resultado = fn(arg); // si fn lanza error, se propaga aquí y no se cachea
+        cache.set(arg, resultado);
+        return resultado;
+    };
+}
 
-//Funciones principales
-function crearDinero(monto: number): Dinero {
+function crearDineroBase(monto: number): Dinero {
     if (monto < 0) {
         throw new Error("El monto de dinero no puede ser negativo.");
     }
@@ -33,6 +43,8 @@ function crearDinero(monto: number): Dinero {
     const montoRedondeado = Math.round(monto * 100) / 100;
     return Object.freeze({ monto: montoRedondeado });
 }
+
+const crearDinero = memoizar(crearDineroBase);
 
 function sumarDinero(a: Dinero, b: Dinero): Dinero {
     return crearDinero(a.monto + b.monto);
