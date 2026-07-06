@@ -1,4 +1,8 @@
-const readline = require("readline");
+
+import readline = require ("readline");
+import BehaviorSubject = require("rxjs/internal/BehaviorSubject");
+import Subject = require("rxjs/internal/Subject");
+import operators = require("rxjs/operators");
 
 //Datos conpuestos
 type TipoTransaccion = "deposito" | "retiro";
@@ -23,13 +27,14 @@ interface Dinero {
     readonly monto: number;
 }
 
+//Funciones
 function memoizar<T, R>(fn: (arg: T) => R): (arg: T) => R {
     const cache = new Map<T, R>();
     return (arg: T): R => {
         if (cache.has(arg)) {
             return cache.get(arg)!;
         }
-        const resultado = fn(arg); // si fn lanza error, se propaga aquí y no se cachea
+        const resultado = fn(arg); // si fn lanza error, no se cachea
         cache.set(arg, resultado);
         return resultado;
     };
@@ -56,28 +61,34 @@ function restarDinero(a: Dinero, b: Dinero): Dinero {
 
 
 //Programacióm Orientada a Objetos
-//Tratando cuenta como una clase
+//Tratando "cuenta" como una clase
 class Cuenta {
     private saldo: Dinero;
     private historial: Registro<DetalleTransaccion>[] = [];
+    
+    // --- Flujos reactivos ---
+    public readonly saldo$: BehaviorSubject.BehaviorSubject<Dinero>;
+    public readonly transacciones$ = new Subject.Subject<DetalleTransaccion>();
 
     constructor(public readonly titular: string, saldoInicial: Dinero) {
         this.saldo = saldoInicial;
+        this.saldo$ = new BehaviorSubject.BehaviorSubject<Dinero>(this.saldo);
     }
 
     private registrarMovimiento(tipo: TipoTransaccion, monto: Dinero): void {
-        this.historial.push({
-            fecha: new Date(),
-            detalle: { tipo, monto, saldoResultante: this.saldo },
-        });
+        const detalle: DetalleTransaccion = {tipo, monto, saldoResultante: this.saldo};
+        this.historial.push({ fecha: new Date(), detalle });
+        this.transacciones$.next(detalle); //Aqui se emite un evento 
     }
 
     depositar(monto: Dinero): ResultadoOperacion {
+        
         if (monto.monto <= 0) {
             return { tipo: "error", mensaje: "El monto a depositar debe ser mayor a 0." };
         }
 
         this.saldo = sumarDinero(this.saldo, monto);
+        this.saldo$.next(this.saldo); // <-- emitimos el nuevo saldo
         this.registrarMovimiento("deposito", monto);
 
         return {
@@ -96,6 +107,7 @@ class Cuenta {
         }
 
         this.saldo = restarDinero(this.saldo, monto);
+        this.saldo$.next(this.saldo); // <-- emitimos el nuevo saldo
         this.registrarMovimiento("retiro", monto);
 
         return {
@@ -113,7 +125,6 @@ class Cuenta {
         return [...this.historial];
     }
 }
-
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -193,6 +204,18 @@ function verHistorialMenu(cuenta: Cuenta): void {
 async function main(): Promise<void> {
     const nombreTitular = await pedirRespuesta("Ingresa tu nombre: ");
     const cuenta = new Cuenta(nombreTitular.trim(), crearDinero(100)); // saldo inicial de ejemplo
+
+     // 1. Cada vez que el saldo cambia, se imprime automáticamente
+    cuenta.saldo$.subscribe((saldo) => {
+        console.log(`[reactivo] Saldo actualizado -> $${saldo.monto}`);
+    });
+
+    // 2. Alerta cuando un retiro supera los $500
+    cuenta.transacciones$
+        .pipe(operators.filter((t) => t.tipo === "retiro" && t.monto.monto > 500))
+        .subscribe((t) => {
+            console.log(`[alerta] Retiro grande detectado: $${t.monto.monto}`);
+        });
 
     let salir = false;
 
