@@ -3,6 +3,7 @@ import readline = require ("readline");
 import BehaviorSubject = require("rxjs/internal/BehaviorSubject");
 import Subject = require("rxjs/internal/Subject");
 import operators = require("rxjs/operators");
+import EventEmitter = require("events");
 
 //Datos conpuestos
 type TipoTransaccion = "deposito" | "retiro";
@@ -62,7 +63,7 @@ function restarDinero(a: Dinero, b: Dinero): Dinero {
 
 //Programacióm Orientada a Objetos
 //Tratando "cuenta" como una clase
-class Cuenta {
+class Cuenta extends EventEmitter {
     private saldo: Dinero;
     private historial: Registro<DetalleTransaccion>[] = [];
     
@@ -71,6 +72,7 @@ class Cuenta {
     public readonly transacciones$ = new Subject.Subject<DetalleTransaccion>();
 
     constructor(public readonly titular: string, saldoInicial: Dinero) {
+        super(); // es obligario llamar super para usar eventemiter
         this.saldo = saldoInicial;
         this.saldo$ = new BehaviorSubject.BehaviorSubject<Dinero>(this.saldo);
     }
@@ -78,7 +80,9 @@ class Cuenta {
     private registrarMovimiento(tipo: TipoTransaccion, monto: Dinero): void {
         const detalle: DetalleTransaccion = {tipo, monto, saldoResultante: this.saldo};
         this.historial.push({ fecha: new Date(), detalle });
-        this.transacciones$.next(detalle); //Aqui se emite un evento 
+
+        this.transacciones$.next(detalle); //reactiva
+        this.emit("transacción", detalle) //Orientada a eventos
     }
 
     depositar(monto: Dinero): ResultadoOperacion {
@@ -88,7 +92,8 @@ class Cuenta {
         }
 
         this.saldo = sumarDinero(this.saldo, monto);
-        this.saldo$.next(this.saldo); // <-- emitimos el nuevo saldo
+        this.saldo$.next(this.saldo); //emitimos el nuevo saldo reactivo
+        this.emit("SaldoActualizado", this.saldo); //Orientada a eventos
         this.registrarMovimiento("deposito", monto);
 
         return {
@@ -107,7 +112,8 @@ class Cuenta {
         }
 
         this.saldo = restarDinero(this.saldo, monto);
-        this.saldo$.next(this.saldo); // <-- emitimos el nuevo saldo
+        this.saldo$.next(this.saldo); // <-- emitimos el nuevo saldo reactiva
+        this.emit("SaldoActualizado", this.saldo); //orientada a eventos
         this.registrarMovimiento("retiro", monto);
 
         return {
@@ -205,17 +211,28 @@ async function main(): Promise<void> {
     const nombreTitular = await pedirRespuesta("Ingresa tu nombre: ");
     const cuenta = new Cuenta(nombreTitular.trim(), crearDinero(100)); // saldo inicial de ejemplo
 
-     // 1. Cada vez que el saldo cambia, se imprime automáticamente
+     //Cada vez que el saldo cambia, se imprime automáticamente Reactivo
     cuenta.saldo$.subscribe((saldo) => {
         console.log(`[reactivo] Saldo actualizado -> $${saldo.monto}`);
     });
 
-    // 2. Alerta cuando un retiro supera los $500
+    // Alerta cuando un retiro supera los $500
     cuenta.transacciones$
         .pipe(operators.filter((t) => t.tipo === "retiro" && t.monto.monto > 500))
         .subscribe((t) => {
             console.log(`[alerta] Retiro grande detectado: $${t.monto.monto}`);
         });
+
+    // Programacion orientada a eventos
+    cuenta.on("saldoActualizado", (saldo: Dinero) => {
+        console.log(`[evento] Saldo actualizado -> $${saldo.monto}`);
+    });
+
+    cuenta.on("transaccion", (t: DetalleTransaccion) => {
+        if (t.tipo === "retiro" && t.monto.monto > 500) {
+            console.log(`[alerta-evento] Retiro grande detectado: $${t.monto.monto}`);
+        }
+    });
 
     let salir = false;
 
