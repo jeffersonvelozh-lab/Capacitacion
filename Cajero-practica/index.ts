@@ -66,7 +66,7 @@ class Cuenta extends EventEmitter {
     private saldo: Dinero;
     private historial: Registro<DetalleTransaccion>[] = [];
     
-    // --- Flujos reactivos ---
+    // Flujos reactivos
     public readonly saldo$: BehaviorSubject.BehaviorSubject<Dinero>;
     public readonly transacciones$ = new Subject.Subject<DetalleTransaccion>();
 
