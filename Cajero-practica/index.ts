@@ -1,4 +1,3 @@
-
 import readline = require ("readline");
 import BehaviorSubject = require("rxjs/internal/BehaviorSubject");
 import Subject = require("rxjs/internal/Subject");
