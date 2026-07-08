@@ -1,9 +1,7 @@
-import EventEmitter = require ("events");
-class Cajero extends EventEmitter {
+class Cajero {
   private saldo: number;
 
   constructor(saldo: number) {
-    super();
     this.saldo = saldo;
   }
 

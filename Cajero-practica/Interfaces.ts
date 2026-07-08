@@ -2,12 +2,12 @@ import type { Dinero } from "./Dinero";
 
 type TipoTransaccion = 'deposito' | 'retiro';
 
-interface Registro<T>{
+export interface Registro<T>{
     fecha: Date;
     detalle: T; 
 }
 
-interface DetalleTransaccion {
+export interface DetalleTransaccion {
     tipo: TipoTransaccion;
     monto: Dinero;
     saldoResultante: Dinero;
