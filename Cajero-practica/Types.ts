@@ -1,8 +1,8 @@
-import type Dinero = require("./Dinero");
+import type Dinero = require("./Interfaces");
 
 
 type TipoTransaccion = 'deposito' | 'retiro';
 
-type ResultadoOperacion =
+export type ResultadoOperacion =
     | { tipo: "exito"; mensaje: string; saldoActual: Dinero.Dinero }
     | { tipo: "error"; mensaje: string };

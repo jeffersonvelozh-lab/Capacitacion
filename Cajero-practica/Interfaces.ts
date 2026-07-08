@@ -1,4 +1,3 @@
-import type { Dinero } from "./Dinero";
 
 type TipoTransaccion = 'deposito' | 'retiro';
 
@@ -11,4 +10,8 @@ export interface DetalleTransaccion {
     tipo: TipoTransaccion;
     monto: Dinero;
     saldoResultante: Dinero;
+}
+
+export interface Dinero  {
+    readonly monto: number;
 }
