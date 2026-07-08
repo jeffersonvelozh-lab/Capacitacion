@@ -22,7 +22,6 @@ interface DetalleTransaccion {
     monto: Dinero;
     saldoResultante: Dinero;
 }
-
 interface Dinero {
     readonly monto: number;
 }
