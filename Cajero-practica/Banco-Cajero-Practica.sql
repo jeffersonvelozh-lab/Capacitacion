@@ -14,7 +14,7 @@ CREATE TABLE BancoFuego.Banco(
 
 );
 
-
+-- Se crea la tabla cliente, que tiene una relacion con la tabla de cuenta
 CREATE TABLE BancoFuego.Cliente(
 
     id_cliente SERIAL PRIMARY KEY,
