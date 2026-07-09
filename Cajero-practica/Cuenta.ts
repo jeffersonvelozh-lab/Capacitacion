@@ -3,6 +3,7 @@ import type { Registro, DetalleTransaccion, Dinero } from "./Interfaces";
 import Subject = require("rxjs/internal/Subject");
 import types = require("rxjs");
 import type { ResultadoOperacion } from "./Types";
+import type TipoTransaccion = require("./Types");
 
 class cuenta extends EventEmitter {
     private saldo!: Dinero;
@@ -17,7 +18,7 @@ class cuenta extends EventEmitter {
         this.emit("SaldoActualizado", this.saldo);
     };
 
-    registrarMovimiento(tipo: "deposito" | "retiro", monto: Dinero): void {
+    registrarMovimiento(tipo: TipoTransaccion, monto: Dinero): void {
         const detalle: DetalleTransaccion = { tipo, monto, saldoResultante: this.saldo };
         this.historial.push({ fecha: new Date(), detalle });
 
@@ -28,7 +29,11 @@ class cuenta extends EventEmitter {
     depositar(monto: Dinero): ResultadoOperacion {
         if (monto.monto <= 0) {
             return { tipo: "error", mensaje: "El monto a depositar debe ser mayor a 0." };
-        }   
+        }
+        
+        this.saldo = { monto: this.saldo.monto + monto.monto };
+        this.emit("SaldoActualizado", this.saldo);
+        this.registrarMovimiento("deposito", monto);
     }
 
 }
