@@ -173,3 +173,98 @@ ON BancoFuego.Movimiento(fecha);
 
 CREATE INDEX idx_transaccion_fecha
 ON BancoFuego.Transaccion(fecha);
+
+
+
+--------------------------------------------------
+-- BANCO
+--------------------------------------------------
+
+INSERT INTO Banco(nombre, codigo, direccion)
+VALUES
+('Banco Fuego', 'BF001', 'Av. Amazonas y Naciones Unidas');
+
+--------------------------------------------------
+-- CLIENTES
+--------------------------------------------------
+
+INSERT INTO Cliente
+(cedula,nombres,apellidos,telefono,correo,direccion)
+VALUES
+('0102030405','Juan','Perez','0991111111','juan@correo.com','Cuenca'),
+('0102030406','Maria','Lopez','0992222222','maria@correo.com','Quito'),
+('0102030407','Carlos','Mendoza','0993333333','carlos@correo.com','Guayaquil'),
+('0102030408','Ana','Vera','0994444444','ana@correo.com','Loja');
+
+--------------------------------------------------
+-- CUENTAS
+--------------------------------------------------
+
+INSERT INTO Cuenta
+(numero_cuenta,tipo,saldo,id_cliente,id_banco)
+VALUES
+('2200000001','AHORRO',1200.00,1,1),
+('2200000002','CORRIENTE',3500.00,2,1),
+('2200000003','AHORRO',900.00,3,1),
+('2200000004','CORRIENTE',5400.00,4,1);
+
+--------------------------------------------------
+-- TARJETAS
+--------------------------------------------------
+
+INSERT INTO Tarjeta
+(numero_tarjeta,tipo,fecha_vencimiento,cvv,id_cuenta)
+VALUES
+('4111111111111111','DEBITO','2029-12-31','123',1),
+('4111111111111112','DEBITO','2029-12-31','456',2),
+('5111111111111111','CREDITO','2030-06-30','789',3),
+('5111111111111112','DEBITO','2028-05-31','852',4);
+
+--------------------------------------------------
+-- AUTENTICACION
+--------------------------------------------------
+
+INSERT INTO Autenticacion
+(pin,intentos,bloqueado,id_tarjeta)
+VALUES
+('1234',0,false,1),
+('4321',0,false,2),
+('5678',1,false,3),
+('9999',3,true,4);
+
+--------------------------------------------------
+-- CAJEROS
+--------------------------------------------------
+
+INSERT INTO Cajero
+(codigo,ubicacion,id_banco)
+VALUES
+('ATM001','Mall del Río',1),
+('ATM002','Terminal Terrestre',1),
+('ATM003','Centro Histórico',1);
+
+--------------------------------------------------
+-- TRANSACCIONES
+--------------------------------------------------
+
+INSERT INTO Transaccion
+(tipo,monto,estado,descripcion,id_cajero)
+VALUES
+('DEPOSITO',500,'EXITOSA','Depósito en efectivo',1),
+('RETIRO',100,'EXITOSA','Retiro por cajero',1),
+('TRANSFERENCIA',250,'EXITOSA','Transferencia entre cuentas',2),
+('RETIRO',50,'FALLIDA','Fondos insuficientes',3),
+('DEPOSITO',1000,'EXITOSA','Depósito de nómina',2);
+
+--------------------------------------------------
+-- MOVIMIENTOS
+--------------------------------------------------
+
+INSERT INTO Movimiento
+(tipo,monto,saldo_anterior,saldo_nuevo,id_cuenta,id_transaccion)
+VALUES
+('DEPOSITO',500,700,1200,1,1),
+('RETIRO',100,3600,3500,2,2),
+('TRANSFERENCIA',250,1150,900,3,3),
+('RETIRO',50,5400,5400,4,4),
+('DEPOSITO',1000,4400,5400,4,5);
