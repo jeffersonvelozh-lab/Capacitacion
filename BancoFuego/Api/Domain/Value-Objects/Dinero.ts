@@ -101,6 +101,7 @@ export class Dinero extends ValueObject<DineroProps> {
         );
     }
 
+    // Metodo para dividir
     dividir(divisor: number): Dinero {
 
         if (divisor <= 0)
