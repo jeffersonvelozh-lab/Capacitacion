@@ -1,5 +1,5 @@
 import { ValueObject } from "../../Shared/ValueObjects";
-import { Moneda } from "../Enums/Moneda";
+import type { Moneda } from "../Enums/Moneda";
 
 interface DineroProps {
     centavos: number;
@@ -87,38 +87,6 @@ export class Dinero extends ValueObject<DineroProps> {
         return Dinero.desdeCentavos(
             resultado, this.moneda
         );
-    }
-
-    // Metodo para multiplicar
-    multiplicar(factor: number): Dinero {
-
-        if (factor < 0)
-            throw new Error("El factor no puede ser negativo.");
-
-        return Dinero.desdeCentavos(
-            Math.round(this.centavos * factor),
-            this.moneda
-        );
-    }
-
-    // Metodo para dividir
-    dividir(divisor: number): Dinero {
-
-        if (divisor <= 0)
-            throw new Error("El divisor debe ser mayor que cero.");
-
-        return Dinero.desdeCentavos(
-            Math.round(this.centavos / divisor),
-            this.moneda
-        );
-    }
-
-    porcentaje(valor: number): Dinero {
-
-        if (valor < 0)
-            throw new Error("El porcentaje no puede ser negativo.");
-
-        return this.multiplicar(valor / 100);
     }
 
     esMayorQue(otro: Dinero): boolean {
