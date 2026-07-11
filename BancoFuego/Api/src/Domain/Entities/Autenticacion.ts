@@ -1,5 +1,6 @@
 import type { PinTextoPlano } from "../Value-Objects/Pin";
 import type { IPinHasher } from "../Value-Objects/PinHasher";
+import { BusinessRuleError } from "../../Shared/Errors";
 
 // Entidad Autenticacion.
 
@@ -47,7 +48,7 @@ export class Autenticacion {
    */
   async verificarPin(pin: PinTextoPlano, hasher: IPinHasher): Promise<boolean> {
     if (this.bloqueado) {
-      throw new Error('La tarjeta está bloqueada por demasiados intentos fallidos');
+      throw new BusinessRuleError('La tarjeta está bloqueada por demasiados intentos fallidos', 'TARJETA_BLOQUEADA', 403);
     }
 
     const esCorrecto = await hasher.verificar(pin, this.pinHash);
@@ -70,7 +71,7 @@ export class Autenticacion {
 
   async cambiarPin(pinNuevo: PinTextoPlano, hasher: IPinHasher): Promise<void> {
     if (this.bloqueado) {
-      throw new Error('No se puede cambiar el PIN de una tarjeta bloqueada');
+      throw new BusinessRuleError('No se puede cambiar el PIN de una tarjeta bloqueada', 'PIN_NO_MODIFICABLE', 403);
     }
     this.pinHash = await hasher.hashear(pinNuevo);
     this.intentos = 0;

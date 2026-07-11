@@ -1,6 +1,7 @@
 // Entities/Transaccion.ts
-import { TipoTransaccion, EstadoTransaccion } from "../Enums/Enuns";
+import { TipoTransaccion, EstadoTransaccion } from "../Enums/TiposDominio";
 import { Dinero } from "../Value-Objects/Dinero";
+import { OperacionNoSoportadaError } from "../../Shared/Errors";
 
 export class Transaccion {
 
@@ -23,8 +24,7 @@ export class Transaccion {
     }): Transaccion {
 
         if (datos.tipo === 'TRANSFERENCIAINTERBANCARIA') {
-        // Todavía no soportado: pendiente hasta que exista catálogo de bancos externos
-            throw new Error('Las transferencias interbancarias aún no están soportadas');
+            throw new OperacionNoSoportadaError('Las transferencias interbancarias aún no están soportadas');
         }
         return new Transaccion(
             undefined,

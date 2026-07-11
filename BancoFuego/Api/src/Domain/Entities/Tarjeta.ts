@@ -1,5 +1,6 @@
-import { TipoTarjeta } from "../Enums/Enuns";
+import { TipoTarjeta } from "../Enums/TiposDominio";
 import { NumeroTarjeta } from "../Value-Objects/NumeroTarjeta";
+import { ValidationError, TarjetaBloqueadaError, TarjetaVencidaError } from "../../Shared/Errors";
 
 export class Tarjeta {
   private constructor(
@@ -20,10 +21,10 @@ export class Tarjeta {
     idCuenta: number;
   }): Tarjeta {
     if (!/^\d{3,4}$/.test(datos.cvv)) {
-      throw new Error('El CVV debe tener 3 o 4 dígitos');
+      throw new ValidationError('El CVV debe tener 3 o 4 dígitos');
     }
     if (datos.fechaVencimiento <= new Date()) {
-      throw new Error('La fecha de vencimiento debe ser futura');
+      throw new ValidationError('La fecha de vencimiento debe ser futura');
     }
     return new Tarjeta(
       undefined,
@@ -67,10 +68,10 @@ export class Tarjeta {
   /** Valida que la tarjeta pueda usarse en una operación del cajero. Lanza si no. */
   asegurarUsable(): void {
     if (!this.activa) {
-      throw new Error('La tarjeta está bloqueada');
+      throw new TarjetaBloqueadaError();
     }
     if (this.estaVencida()) {
-      throw new Error('La tarjeta está vencida');
+      throw new TarjetaVencidaError();
     }
   }
 

@@ -10,6 +10,16 @@ import { Dinero } from "../../Domain/Value-Objects/Dinero";
 import { Transaccion } from "../../Domain/Entities/Transaccion";
 import { Movimiento } from "../../Domain/Entities/Movimiento";
 import { PinTextoPlano } from "../../Domain/Value-Objects/Pin";
+import { Tarjeta } from "../../Domain/Entities/Tarjeta";
+import { Autenticacion } from "../../Domain/Entities/Autenticacion";
+import { Cuenta } from "../../Domain/Entities/Cuenta";
+import {
+    AutenticacionNoEncontradaError,
+    CuentaNoEncontradaError,
+    PinIncorrectoError,
+    TarjetaNoEncontradaError,
+    TarjetaNoUsableError,
+} from "../../Shared/Errors";
 
 export interface RetirarDineroComando {
     numeroTarjeta: string;
@@ -35,93 +45,132 @@ export class RetirarDineroService {
     ) {}
 
     async ejecutar(comando: RetirarDineroComando): Promise<RetirarDineroResultado> {
-        // 1. Localizar y validar la tarjeta
-        const numeroTarjeta = NumeroTarjeta.desde(comando.numeroTarjeta);
+        const numeroTarjeta = this.validarNumeroTarjeta(comando.numeroTarjeta);
+        const tarjeta = await this.obtenerTarjetaValida(numeroTarjeta);
+
+        const autenticacion = await this.obtenerAutenticacion(tarjeta);
+        await this.autenticarPin(autenticacion, comando.pin);
+
+        const cuenta = await this.obtenerCuenta(tarjeta);
+        const monto = Dinero.desde(comando.monto);
+
+        return this.ejecutarRetiroConPersistencia({
+            cuenta,
+            monto,
+            idCajero: comando.idCajero,
+        });
+    }
+
+    private validarNumeroTarjeta(numeroTarjeta: string): NumeroTarjeta {
+        return NumeroTarjeta.desde(numeroTarjeta);
+    }
+
+    private async obtenerTarjetaValida(numeroTarjeta: NumeroTarjeta): Promise<Tarjeta> {
         const tarjeta = await this.tarjetaRepo.buscarPorNumero(numeroTarjeta);
         if (!tarjeta) {
-            throw new Error('Tarjeta no encontrada');
+            throw new TarjetaNoEncontradaError();
         }
-        tarjeta.asegurarUsable(); // lanza si está bloqueada o vencida
 
-        // 2. Autenticación — se persiste SIEMPRE, sin importar el resultado,
-        //    porque necesitamos guardar el conteo de intentos incluso si falla.
-        const idTarjeta = tarjeta.obtenerId()!;
+        try {
+            tarjeta.asegurarUsable();
+        } catch (error) {
+            throw new TarjetaNoUsableError(error instanceof Error ? error.message : 'La tarjeta no puede usarse');
+        }
+
+        return tarjeta;
+    }
+
+    private async obtenerAutenticacion(tarjeta: Tarjeta): Promise<Autenticacion> {
+        const idTarjeta = tarjeta.obtenerId();
+        if (!idTarjeta) {
+            throw new AutenticacionNoEncontradaError();
+        }
+
         const autenticacion = await this.autenticacionRepo.buscarPorIdTarjeta(idTarjeta);
         if (!autenticacion) {
-            throw new Error('No existe autenticación registrada para esta tarjeta');
+            throw new AutenticacionNoEncontradaError();
         }
 
-        const pinCorrecto = await autenticacion.verificarPin
-        (
-            PinTextoPlano.desde(comando.pin), this.pinHasher,
+        return autenticacion;
+    }
+
+    private async autenticarPin(autenticacion: Autenticacion, pin: string): Promise<void> {
+        const pinCorrecto = await autenticacion.verificarPin(
+            PinTextoPlano.desde(pin),
+            this.pinHasher,
         );
         await this.autenticacionRepo.guardar(autenticacion);
 
         if (!pinCorrecto) {
-            throw new Error('PIN incorrecto');
+            throw new PinIncorrectoError();
         }
-
-        // 3. Operación de dinero sobre la cuenta
-        const cuenta = await this.cuentaRepo.buscarPorId(tarjeta.obtenerIdCuenta());
-        if (!cuenta) {
-            throw new Error('Cuenta no encontrada');
-        }
-
-        const monto = Dinero.desde(comando.monto);
-        let transaccion: Transaccion;
-        let movimiento: Movimiento;
-
-        try {
-        const { saldoAnterior, saldoNuevo } = cuenta.retirar(monto);
-
-        transaccion = await this.transaccionRepo.guardar(
-            Transaccion.crear({
-            tipo: 'RETIRO',
-            monto,
-            estado: 'EXITOSA',
-            idCajero: comando.idCajero,
-            }),
-        );
-
-        movimiento = Movimiento.crear({
-            tipo: 'RETIRO',
-            monto,
-            saldoAnterior,
-            saldoNuevo,
-            idCuenta: cuenta.obtenerId()!,
-            idTransaccion: transaccion.obtenerId()!,
-        });
-        await this.movimientoRepo.guardar(movimiento);
-
-        // Solo persistimos la cuenta si el retiro sí tuvo efecto
-        await this.cuentaRepo.guardar(cuenta);
-        } catch (error) {
-        // Fondos insuficientes o cuenta inactiva: igual dejamos rastro
-        const saldoActual = cuenta.obtenerSaldo();
-
-        transaccion = await this.transaccionRepo.guardar(
-            Transaccion.crear({
-            tipo: 'RETIRO',
-            monto,
-            estado: 'FALLIDA',
-            descripcion: error instanceof Error ? error.message : 'Error desconocido',
-            idCajero: comando.idCajero,
-            }),
-        );
-
-        movimiento = Movimiento.crear({
-            tipo: 'RETIRO',
-            monto,
-            saldoAnterior: saldoActual,
-            saldoNuevo: saldoActual, // sin cambio, igual que tu seed data
-            idCuenta: cuenta.obtenerId()!,
-            idTransaccion: transaccion.obtenerId()!,
-        });
-        await this.movimientoRepo.guardar(movimiento);
-
-            throw error; // el llamador (controller) decide cómo responder al usuario
     }
 
-        return { transaccion, movimiento, saldoNuevo: cuenta.obtenerSaldo() };
+    private async obtenerCuenta(tarjeta: Tarjeta): Promise<Cuenta> {
+        const cuenta = await this.cuentaRepo.buscarPorId(tarjeta.obtenerIdCuenta());
+        if (!cuenta) {
+            throw new CuentaNoEncontradaError();
+        }
+        return cuenta;
+    }
+
+    private async ejecutarRetiroConPersistencia(args: {
+        cuenta: Cuenta;
+        monto: Dinero;
+        idCajero: number;
+    }): Promise<RetirarDineroResultado> {
+        try {
+            const { saldoAnterior, saldoNuevo } = args.cuenta.retirar(args.monto);
+
+            const transaccion = await this.transaccionRepo.guardar(
+                Transaccion.crear({
+                    tipo: 'RETIRO',
+                    monto: args.monto,
+                    estado: 'EXITOSA',
+                    idCajero: args.idCajero,
+                }),
+            );
+
+            const movimiento = Movimiento.crear({
+                tipo: 'RETIRO',
+                monto: args.monto,
+                saldoAnterior,
+                saldoNuevo,
+                idCuenta: args.cuenta.obtenerId()!,
+                idTransaccion: transaccion.obtenerId()!,
+            });
+
+            await this.movimientoRepo.guardar(movimiento);
+            await this.cuentaRepo.guardar(args.cuenta);
+
+            return {
+                transaccion,
+                movimiento,
+                saldoNuevo,
+            };
+        } catch (error) {
+            const saldoActual = args.cuenta.obtenerSaldo();
+            const transaccionFallida = await this.transaccionRepo.guardar(
+                Transaccion.crear({
+                    tipo: 'RETIRO',
+                    monto: args.monto,
+                    estado: 'FALLIDA',
+                    descripcion: error instanceof Error ? error.message : 'Error desconocido',
+                    idCajero: args.idCajero,
+                }),
+            );
+
+            const movimientoFallido = Movimiento.crear({
+                tipo: 'RETIRO',
+                monto: args.monto,
+                saldoAnterior: saldoActual,
+                saldoNuevo: saldoActual,
+                idCuenta: args.cuenta.obtenerId()!,
+                idTransaccion: transaccionFallida.obtenerId()!,
+            });
+
+            await this.movimientoRepo.guardar(movimientoFallido);
+            throw error;
+        }
     }
 }

@@ -1,5 +1,5 @@
 // Entities/Movimiento.ts
-import { TipoMovimiento } from "../Enums/Enuns";
+import { TipoMovimiento } from "../Enums/TiposDominio";
 import { Dinero } from "../Value-Objects/Dinero";
 
 export class Movimiento {

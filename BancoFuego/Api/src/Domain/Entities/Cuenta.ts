@@ -1,6 +1,7 @@
-import { TipoCuenta } from "../Enums/Enuns";
+import { TipoCuenta } from "../Enums/TiposDominio";
 import { Dinero } from "../Value-Objects/Dinero";
 import { NumeroCuenta } from "../Value-Objects/NumeroCuenta";
+import { CuentaInactivaError, FondosInsuficientesError, MontoInvalidoError } from "../../Shared/Errors";
 
 
 /** Entidad Cuenta — el AGGREGATE ROOT más importante del dominio.*/
@@ -63,10 +64,10 @@ export class Cuenta {
   retirar(monto: Dinero): { saldoAnterior: Dinero; saldoNuevo: Dinero } {
     this.asegurarActiva();
     if (!monto.esPositivo()) {
-      throw new Error('El monto a retirar debe ser mayor a cero');
+      throw new MontoInvalidoError('El monto a retirar debe ser mayor a cero');
     }
     if (!this.tieneFondosSuficientes(monto)) {
-      throw new Error('Fondos insuficientes');
+      throw new FondosInsuficientesError();
     }
     const saldoAnterior = this.saldo;
     this.saldo = this.saldo.restar(monto);
@@ -76,7 +77,7 @@ export class Cuenta {
   depositar(monto: Dinero): { saldoAnterior: Dinero; saldoNuevo: Dinero } {
     this.asegurarActiva();
     if (!monto.esPositivo()) {
-      throw new Error('El monto a depositar debe ser mayor a cero');
+      throw new MontoInvalidoError('El monto a depositar debe ser mayor a cero');
     }
     const saldoAnterior = this.saldo;
     this.saldo = this.saldo.sumar(monto);
@@ -85,7 +86,7 @@ export class Cuenta {
 
   private asegurarActiva(): void {
     if (!this.activa) {
-      throw new Error(`La cuenta ${this.numeroCuenta.toString()} no está activa`);
+      throw new CuentaInactivaError(`La cuenta ${this.numeroCuenta.toString()} no está activa`);
     }
   }
 
