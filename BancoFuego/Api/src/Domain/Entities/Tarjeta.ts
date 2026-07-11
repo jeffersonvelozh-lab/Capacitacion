@@ -1,5 +1,5 @@
-import { NumeroTarjeta } from '../value-objects/numero-tarjeta.vo.js';
-import type { TipoTarjeta } from '../enums/enums.js';
+import { TipoTarjeta } from "../Enums/Enuns";
+import { NumeroTarjeta } from "../Value-Objects/NumeroTarjeta";
 
 export class Tarjeta {
   private constructor(

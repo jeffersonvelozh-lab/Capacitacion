@@ -3,15 +3,7 @@ import { Dinero } from "../Value-Objects/Dinero";
 import { NumeroCuenta } from "../Value-Objects/NumeroCuenta";
 
 
-/**
- * Entidad Cuenta — el AGGREGATE ROOT más importante del dominio.
- *
- * Regla de oro: el saldo JAMÁS se modifica desde afuera con un setter.
- * Toda operación de dinero pasa por `retirar()` o `depositar()`, que
- * son los únicos lugares donde se aplican las reglas de negocio
- * (cuenta activa, fondos suficientes). Por eso `saldo` es privado y
- * no existe `setSaldo()`.
- */
+/** Entidad Cuenta — el AGGREGATE ROOT más importante del dominio.*/
 export class Cuenta {
   private constructor(
     private readonly id: number | undefined,
@@ -66,18 +58,18 @@ export class Cuenta {
   }
 
   /**
-   * Retira dinero de la cuenta. Devuelve el saldo ANTERIOR, porque
-   * quien orqueste la operación (un servicio de aplicación) lo va a
-   * necesitar para armar el registro de Movimiento
-   * (saldo_anterior / saldo_nuevo son columnas de esa tabla).
+   * Retira dinero de la cuenta. Devuelve el saldo ANTERIOR
    */
   retirar(monto: Dinero): { saldoAnterior: Dinero; saldoNuevo: Dinero } {
     this.asegurarActiva();
     if (!monto.esPositivo()) {
       throw new Error('El monto a retirar debe ser mayor a cero');
     }
+    if (!this.tieneFondosSuficientes(monto)) {
+      throw new Error('Fondos insuficientes');
+    }
     const saldoAnterior = this.saldo;
-    this.saldo = this.saldo.restar(monto); // ya valida saldo >= 0 internamente
+    this.saldo = this.saldo.restar(monto);
     return { saldoAnterior, saldoNuevo: this.saldo };
   }
 
