@@ -9,7 +9,7 @@ export class PostgresConnection {
             PostgresConnection.instancia = new Pool({
                 host: process.env.DB_HOST ?? "localhost",
                 port: Number(process.env.DB_PORT ?? 5432),
-                database: process.env.DB_NAME ?? "banco_fuego",
+                database: process.env.DB_NAME ?? "bancofuego",
                 user: process.env.DB_USER,
                 password: process.env.DB_PASSWORD,
             });

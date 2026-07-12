@@ -73,7 +73,19 @@ export class Transaccion {
         return this.tipo;
     }
 
+    obtenerMonto(): Dinero {
+        return this.monto;
+    }
+
     obtenerEstado(): EstadoTransaccion {
         return this.estado;
+    }
+
+    obtenerDescripcion(): string | undefined {
+        return this.descripcion;
+    }
+
+    obtenerIdCajero(): number | undefined {
+        return this.idCajero;
     }
 }

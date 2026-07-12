@@ -83,6 +83,22 @@ export class Movimiento {
         return this.id;
     }
 
+    obtenerTipo(): TipoMovimiento {
+        return this.tipo;
+    }
+
+    obtenerMonto(): Dinero {
+        return this.monto;
+    }
+
+    obtenerSaldoAnterior(): Dinero {
+        return this.saldoAnterior;
+    }
+
+    obtenerSaldoNuevo(): Dinero {
+        return this.saldoNuevo;
+    }
+
     obtenerIdCuenta(): number {
         return this.idCuenta;
     }

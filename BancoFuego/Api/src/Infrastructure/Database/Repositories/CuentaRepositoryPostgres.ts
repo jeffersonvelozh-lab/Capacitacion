@@ -5,12 +5,14 @@ import { Dinero } from "../../../Domain/Value-Objects/Dinero";
 import { NumeroCuenta } from "../../../Domain/Value-Objects/NumeroCuenta";
 import { TipoCuenta } from "../../../Domain/Enums/TiposDominio";
 import { PostgresConnection } from "../PostgresConnection";
+import { CuentaQueries } from "../Queries/CuentaQuerie";
+
 
 interface FilaCuenta {
     id_cuenta: number;
     numero_cuenta: string;
     tipo: TipoCuenta;
-    saldo: string;       // NUMERIC llega como string
+    saldo: string; // NUMERIC llega como string desde pg
     fecha_creacion: Date;
     activa: boolean;
     id_cliente: number;
@@ -22,9 +24,7 @@ export class CuentaRepositoryPostgres implements ICuentaRepository {
 
     async buscarPorId(id: number): Promise<Cuenta | null> {
         const resultado = await this.pool.query<FilaCuenta>(
-            `SELECT id_cuenta, numero_cuenta, tipo, saldo, fecha_creacion, activa, id_cliente, id_banco
-                FROM BancoFuego.Cuenta
-                WHERE id_cuenta = $1`,
+            CuentaQueries.BUSCAR_POR_ID,
             [id],
         );
         if (resultado.rowCount === 0) return null;
@@ -33,16 +33,13 @@ export class CuentaRepositoryPostgres implements ICuentaRepository {
 
     async crear(cuenta: Cuenta): Promise<number> {
         const resultado = await this.pool.query<{ id_cuenta: number }>(
-            `INSERT INTO BancoFuego.Cuenta
-                (numero_cuenta, tipo, saldo, id_cliente, id_banco)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING id_cuenta`,
+            CuentaQueries.CREAR,
             [
                 cuenta.obtenerNumeroCuenta().toString(),
-                this.obtenerTipo(cuenta),
+                cuenta.obtenerTipo(),
                 cuenta.obtenerSaldo().toNumber(),
                 cuenta.obtenerIdCliente(),
-                this.obtenerIdBanco(cuenta),
+                cuenta.obtenerIdBanco(),
             ],
         );
         return resultado.rows[0]!.id_cuenta;
@@ -53,12 +50,11 @@ export class CuentaRepositoryPostgres implements ICuentaRepository {
         if (id === undefined) {
             throw new Error("No se puede actualizar una cuenta sin id");
         }
-        await this.pool.query(
-            `UPDATE BancoFuego.Cuenta
-                SET saldo = $1, activa = $2
-                WHERE id_cuenta = $3`,
-            [cuenta.obtenerSaldo().toNumber(), cuenta.estaActiva(), id],
-        );
+        await this.pool.query(CuentaQueries.ACTUALIZAR, [
+            cuenta.obtenerSaldo().toNumber(),
+            cuenta.estaActiva(),
+            id,
+        ]);
     }
 
     private aEntidad(fila: FilaCuenta): Cuenta {

@@ -141,7 +141,7 @@ export class RetirarDineroService {
             });
 
             await this.movimientoRepo.guardar(movimiento);
-            await this.cuentaRepo.crear(args.cuenta);
+            await this.cuentaRepo.actualizar(args.cuenta);
 
             return {
                 transaccion,

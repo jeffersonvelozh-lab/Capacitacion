@@ -1,16 +1,35 @@
 import express from 'express';
-import type { Request, Response } from 'express';
+import "dotenv/config";
+import routes from './Infrastructure/Http/routes';
+import { errorHandler } from './Infrastructure/Http/errorHandler';
 
-const app = express();
-const PORT: number = 3000;
+export function createApp() {
+  const app = express();
+  app.disable('x-powered-by');
+  app.use(express.json());
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.header('X-Content-Type-Options', 'nosniff');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+      return;
+    }
+    next();
+  });
+  app.use(routes);
+  app.use(errorHandler);
+  return app;
+}
 
-app.use(express.json());
+export function startServer(port: number = Number(process.env.PORT ?? 3000)) {
+  const app = createApp();
+  return app.listen(port, () => {
+    console.log(`Servidor TS corriendo en http://localhost:${port}`);
+  });
+}
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('¡Hola desde tu backend en Node.js con TypeScript!');
-});
-
-app.listen(PORT, () => {
-  console.log(`Servidor TS corriendo en http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  startServer();
+}
 

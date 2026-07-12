@@ -91,6 +91,10 @@ export class Autenticacion {
     return this.intentos;
   }
 
+  obtenerPinHash(): string {
+    return this.pinHash;
+  }
+
   obtenerIdTarjeta(): number {
     return this.idTarjeta;
   }
