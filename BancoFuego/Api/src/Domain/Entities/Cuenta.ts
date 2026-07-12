@@ -107,6 +107,14 @@ export class Cuenta {
     return this.id;
   }
 
+  obtenerIdBanco(): number {   
+    return this.idBanco;
+  }
+
+  obtenerTipo(): TipoCuenta { 
+    return this.tipo;
+  }
+
   obtenerSaldo(): Dinero {
     return this.saldo;
   }
