@@ -1,0 +1,71 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Banco Fuego API",
+    "version": "1.0.0",
+    "description": "API mínima para operaciones básicas de cuentas y retiros"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Servicio disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cuentas/{id}": {
+      "get": {
+        "summary": "Obtener cuenta por id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Cuenta encontrada" }
+        }
+      }
+    },
+    "/retiros": {
+      "post": {
+        "summary": "Realizar retiro",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["numeroTarjeta", "pin", "monto", "idCajero"],
+                "properties": {
+                  "numeroTarjeta": { "type": "string" },
+                  "pin": { "type": "string" },
+                  "monto": { "type": "number" },
+                  "idCajero": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Retiro realizado" }
+        }
+      }
+    }
+  }
+}

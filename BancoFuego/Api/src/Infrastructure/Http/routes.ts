@@ -4,6 +4,7 @@ import { RetiroController } from './controllers/RetiroController';
 import { DepositoController } from './controllers/DepositoController';
 import { TarjetaController } from './controllers/TarjetaController';
 import { validateBody, validateParams } from './validation';
+import { serveOpenApiSpec, serveSwaggerUi } from './swagger';
 
 const router = Router();
 const cuentaController = new CuentaController();
@@ -14,6 +15,9 @@ const tarjetaController = new TarjetaController();
 router.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
 });
+
+router.get('/docs', serveSwaggerUi);
+router.get('/openapi.json', serveOpenApiSpec);
 
 router.get('/cuentas/:id', validateParams(['id']), (req, res) => {
     void cuentaController.obtenerCuenta(req, res);
