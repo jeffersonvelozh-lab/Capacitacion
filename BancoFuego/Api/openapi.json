@@ -1,71 +1,141 @@
 {
-  "openapi": "3.0.3",
-  "info": {
-    "title": "Banco Fuego API",
-    "version": "1.0.0",
-    "description": "API mínima para operaciones básicas de cuentas y retiros"
-  },
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Banco Fuego API",
+        "version": "1.0.0",
+        "description": "API mínima para operaciones básicas de cuentas y retiros"
+    },
   "paths": {
     "/health": {
-      "get": {
-        "summary": "Health check",
-        "responses": {
-          "200": {
-            "description": "Servicio disponible",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": { "type": "string", "example": "ok" }
-                  }
+        "get": {
+            "summary": "Health check",
+            "responses": {
+                "200": {
+                    "description": "Servicio disponible",
+                    "content": {
+                        "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "status": { "type": "string", "example": "ok" }
+                        }
+                    }
                 }
-              }
             }
-          }
+            }
         }
-      }
+        }
     },
     "/cuentas/{id}": {
-      "get": {
-        "summary": "Obtener cuenta por id",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "integer" }
-          }
-        ],
-        "responses": {
-          "200": { "description": "Cuenta encontrada" }
+        "get": {
+            "summary": "Obtener cuenta por id",
+            "parameters": [
+                {
+                "name": "id",
+                "in": "path",
+                "required": true,
+                "schema": { "type": "integer" }
+                }
+            ],
+            "responses": {
+                "200": { "description": "Cuenta encontrada" }
+            }
         }
-      }
     },
     "/retiros": {
-      "post": {
-        "summary": "Realizar retiro",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["numeroTarjeta", "pin", "monto", "idCajero"],
-                "properties": {
-                  "numeroTarjeta": { "type": "string" },
-                  "pin": { "type": "string" },
-                  "monto": { "type": "number" },
-                  "idCajero": { "type": "integer" }
+        "post": {
+            "summary": "Realizar retiro",
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": ["numeroTarjeta", "pin", "monto", "idCajero"],
+                            "properties": {
+                                "numeroTarjeta": { "type": "string" },
+                                "pin": { "type": "string" },
+                                "monto": { "type": "number" },
+                                "idCajero": { "type": "integer" }
+                            }
+                        }
+                    }
                 }
-              }
+            },
+            "responses": {
+                "200": { "description": "Retiro realizado" }
             }
-          }
-        },
-        "responses": {
-          "200": { "description": "Retiro realizado" }
         }
-      }
+    },
+    "/cuentas/{id}/depositos": {
+        "post": {
+            "summary": "Depositar dinero en una cuenta",
+            "parameters": [
+                {
+                "name": "id",
+                "in": "path",
+                "required": true,
+                "schema": { "type": "integer" }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": ["monto"],
+                            "properties": {
+                                "monto": { "type": "number", "example": 100 }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": { "description": "Depósito realizado" }
+            }
+        }
+    },
+    "/tarjetas/{numeroTarjeta}/estado": {
+        "get": {
+            "summary": "Consultar estado de una tarjeta",
+            "parameters": [
+                {
+                    "name": "numeroTarjeta",
+                    "in": "path",
+                    "required": true,
+                    "schema": { "type": "string" }
+                }
+            ],
+            "responses": {
+                "200": { "description": "Estado de la tarjeta" }
+            }
+        }
+    },
+    "/transferencias": {
+        "post": {
+            "summary": "Realizar transferencia interna entre cuentas",
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": ["origenId", "destinoId", "monto"],
+                            "properties": {
+                                "origenId": { "type": "integer", "example": 1 },
+                                "destinoId": { "type": "integer", "example": 2 },
+                                "monto": { "type": "number", "example": 50 }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": { "description": "Transferencia realizada" }
+            }
+        }
     }
-  }
+    }
 }
