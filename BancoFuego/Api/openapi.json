@@ -5,7 +5,7 @@
         "version": "1.0.0",
         "description": "API mínima para operaciones básicas de cuentas y retiros"
     },
-  "paths": {
+    "paths": {
     "/health": {
         "get": {
             "summary": "Health check",
